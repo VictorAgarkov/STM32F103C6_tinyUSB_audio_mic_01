@@ -41,9 +41,6 @@
 // Supported MCUs
 // CFG_TUSB_MCU must be defined to one of following value
 //--------------------------------------------------------------------+
-#define CFG_TUSB_MCU    OPT_MCU_STM32F1
-
-
 
 #define OPT_MCU_NONE                0
 

@@ -36,13 +36,19 @@ extern "C" {
 
 // RHPort number used for device can be defined by board.mk, default to port 0
 #ifndef BOARD_TUD_RHPORT
-#define BOARD_TUD_RHPORT      0
+	#define BOARD_TUD_RHPORT      0
 #endif
 
 // RHPort max operational speed can defined by board.mk
 #ifndef BOARD_TUD_MAX_SPEED
-#define BOARD_TUD_MAX_SPEED   OPT_MODE_DEFAULT_SPEED
+	#define BOARD_TUD_MAX_SPEED   OPT_MODE_DEFAULT_SPEED
 #endif
+
+
+#define CFG_TUSB_MCU    OPT_MCU_STM32F1
+
+#define USB_CONNECT_PIN
+
 
 //--------------------------------------------------------------------
 // COMMON CONFIGURATION
@@ -50,15 +56,15 @@ extern "C" {
 
 // defined by compiler flags for flexibility
 #ifndef CFG_TUSB_MCU
-#error CFG_TUSB_MCU must be defined
+	#error CFG_TUSB_MCU must be defined
 #endif
 
 #ifndef CFG_TUSB_OS
-#define CFG_TUSB_OS                 OPT_OS_NONE
+	#define CFG_TUSB_OS                 OPT_OS_NONE
 #endif
 
 #ifndef CFG_TUSB_DEBUG
-#define CFG_TUSB_DEBUG              0
+	#define CFG_TUSB_DEBUG              0
 #endif
 
 // Enable Device stack
@@ -78,11 +84,11 @@ extern "C" {
  * - CFG_TUSB_MEM_ALIGN   : __attribute__ ((aligned(4)))
  */
 #ifndef CFG_TUSB_MEM_SECTION
-#define CFG_TUSB_MEM_SECTION
+	#define CFG_TUSB_MEM_SECTION
 #endif
 
 #ifndef CFG_TUSB_MEM_ALIGN
-#define CFG_TUSB_MEM_ALIGN          __attribute__ ((aligned(4)))
+	#define CFG_TUSB_MEM_ALIGN          __attribute__ ((aligned(4)))
 #endif
 
 //--------------------------------------------------------------------

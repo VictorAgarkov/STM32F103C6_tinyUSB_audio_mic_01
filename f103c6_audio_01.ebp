@@ -294,6 +294,7 @@
 		</Unit>
 		<Unit filename="stm32f103c6_flash.ld" />
 		<Unit filename="STM32F103xx.svd" />
+		<Unit filename="tinyusb\hw\bsp\board_api.h" />
 		<Unit filename="tinyusb\hw\bsp\family.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -302,18 +303,31 @@
 		</Unit>
 		<Unit filename="tinyusb\portable\fsdev_stm32.h" />
 		<Unit filename="tinyusb\portable\fsdev_type.h" />
+		<Unit filename="tinyusb\src\class\audio\audio.h" />
 		<Unit filename="tinyusb\src\class\audio\audio_device.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="tinyusb\src\class\audio\audio_device.h" />
+		<Unit filename="tinyusb\src\common\tusb_common.h" />
+		<Unit filename="tinyusb\src\common\tusb_compiler.h" />
+		<Unit filename="tinyusb\src\common\tusb_debug.h" />
 		<Unit filename="tinyusb\src\common\tusb_fifo.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="tinyusb\src\common\tusb_fifo.h" />
+		<Unit filename="tinyusb\src\common\tusb_mcu.h" />
+		<Unit filename="tinyusb\src\common\tusb_private.h" />
+		<Unit filename="tinyusb\src\common\tusb_types.h" />
+		<Unit filename="tinyusb\src\common\tusb_verify.h" />
+		<Unit filename="tinyusb\src\device\dcd.h" />
 		<Unit filename="tinyusb\src\device\usbd.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="tinyusb\src\device\usbd.h" />
 		<Unit filename="tinyusb\src\device\usbd_control.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="tinyusb\src\device\usbd_pvt.h" />
 		<Unit filename="tinyusb\src\tusb.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -322,11 +336,11 @@
 		<Extensions>
 			<code_completion />
 			<debugger>
-				<target_debugging_settings target="Release">
-					<debug_interface description="STM32F103xx.svd" options="2" reg_filter="0" probe="STlink" device="stm32-auto" speed="" bus_address="" serial="" defines="" scripts="" flash_size="" ram_size="" vcc_voltage="" verbose="4" unwind="2" rstType="0" use_jtag="false" disable_cache="false" enable_semi="false" close_eblink="true" gdb_reset="" gdb_reset_remote="" gdb_before_conn="" gdb_after_conn="" use_remote="false" ip_address="" ip_port="" path="" executable="" start_server="false" arguments="" flash_verify="false" flash_run="false" />
-				</target_debugging_settings>
 				<target_debugging_settings target="Debug">
-					<debug_interface description="STM32F103xx.svd" options="2" reg_filter="0" probe="STlink" device="stm32-auto" speed="" bus_address="" serial="" defines="" scripts="" flash_size="" ram_size="" vcc_voltage="" verbose="4" unwind="2" rstType="0" use_jtag="false" disable_cache="false" enable_semi="false" close_eblink="true" gdb_reset="" gdb_reset_remote="" gdb_before_conn="" gdb_after_conn="" use_remote="false" ip_address="" ip_port="" path="" executable="" start_server="false" arguments="" flash_verify="false" flash_run="false" />
+					<debug_interface description="STM32F103xx.svd" options="2" reg_filter="0" probe="STlink" device="stm32-auto" speed="" bus_address="" serial="" defines="" scripts="" flash_size="" ram_size="" vcc_voltage="" verbose="4" unwind="2" rstType="0" use_jtag="false" disable_cache="false" enable_semi="false" close_eblink="true" gdb_reset="" gdb_reset_remote="reset;" gdb_before_conn="" gdb_after_conn="" use_remote="false" ip_address="" ip_port="" path="" executable="" start_server="false" arguments="" flash_verify="false" flash_run="true" />
+				</target_debugging_settings>
+				<target_debugging_settings target="Release">
+					<debug_interface description="STM32F103xx.svd" options="2" reg_filter="0" probe="STlink" device="stm32-auto" speed="" bus_address="" serial="" defines="" scripts="" flash_size="" ram_size="" vcc_voltage="" verbose="4" unwind="2" rstType="0" use_jtag="false" disable_cache="false" enable_semi="false" close_eblink="true" gdb_reset="" gdb_reset_remote="reset;" gdb_before_conn="" gdb_after_conn="" use_remote="false" ip_address="" ip_port="" path="" executable="" start_server="false" arguments="" flash_verify="false" flash_run="true" />
 				</target_debugging_settings>
 			</debugger>
 			<envvars />
