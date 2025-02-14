@@ -3,12 +3,12 @@
 	<EmBitzVersion release="2.30" revision="0" />
 	<FileVersion major="2" minor="0" />
 	<Project>
-		<Option title="f103c6_audio_01" />
+		<Option title="f103c6_tinyUSB_audio_mic_01" />
 		<Option pch_mode="2" />
 		<Option compiler="armgcc_eb" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin\Debug\f103c6_audio_01.elf" />
+				<Option output="bin\Debug\f103c6_tinyUSB_audio_mic_01.elf" />
 				<Option object_output="obj\Debug\" />
 				<Option type="0" />
 				<Option compiler="armgcc_eb" />
@@ -36,7 +36,7 @@
 				</Linker>
 			</Target>
 			<Target title="Release">
-				<Option output="bin\Release\f103c6_audio_01.elf" />
+				<Option output="bin\Release\f103c6_tinyUSB_audio_mic_01.elf" />
 				<Option object_output="obj\Release\" />
 				<Option type="0" />
 				<Option create_hex="1" />
