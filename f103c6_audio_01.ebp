@@ -71,9 +71,9 @@
 		</Build>
 		<Device>
 			<Add option="$device=cortex-m3" />
+			<Add option="$lscript=./stm32f103c6_flash.ld" />
 			<Add option="$stack=0x0100" />
 			<Add option="$heap=0x0000" />
-			<Add option="$lscript=./stm32f103c6_flash.ld" />
 		</Device>
 		<Compiler>
 			<Add option="-mfloat-abi=soft" />
@@ -89,14 +89,16 @@
 			<Add directory=".\src" />
 			<Add directory=".\HAL\inc" />
 			<Add directory=".\HAL\src" />
+			<Add directory="tinyusb\hw" />
+			<Add directory="tinyusb\src" />
 		</Compiler>
 		<Cpp>
 			<Add option="-mfloat-abi=soft" />
 			<Add option="-fno-strict-aliasing" />
 		</Cpp>
 		<Linker>
-			<Add option="-eb_start_files" />
 			<Add option="-eb_lib=n" />
+			<Add option="-eb_start_files" />
 		</Linker>
 		<Unit filename="cmsis\cmsis_compiler.h" />
 		<Unit filename="cmsis\cmsis_gcc.h" />
@@ -287,8 +289,36 @@
 		<Unit filename="src\system_stm32f1xx.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="src\usb_descriptors.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="stm32f103c6_flash.ld" />
 		<Unit filename="STM32F103xx.svd" />
+		<Unit filename="tinyusb\hw\bsp\family.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tinyusb\portable\dcd_stm32_fsdev.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tinyusb\portable\fsdev_stm32.h" />
+		<Unit filename="tinyusb\portable\fsdev_type.h" />
+		<Unit filename="tinyusb\src\class\audio\audio_device.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tinyusb\src\common\tusb_fifo.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tinyusb\src\device\usbd.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tinyusb\src\device\usbd_control.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tinyusb\src\tusb.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tinyusb\src\tusb.h" />
+		<Unit filename="tinyusb\src\tusb_option.h" />
 		<Extensions>
 			<code_completion />
 			<debugger>
