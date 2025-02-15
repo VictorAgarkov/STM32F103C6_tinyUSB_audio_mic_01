@@ -35,6 +35,8 @@
 
 //#include "board.h"
 
+void user_systick_handler(uint32_t tick_count);
+
 //--------------------------------------------------------------------+
 
 
@@ -240,7 +242,6 @@ uint32_t board_button_read(void)
 //    return len;
 //}
 //--------------------------------------------------------------------+
-
 #if CFG_TUSB_OS == OPT_OS_NONE
 	volatile uint32_t system_ticks = 0;
 
@@ -248,6 +249,8 @@ uint32_t board_button_read(void)
 	{
 		HAL_IncTick();
 		system_ticks++;
+		user_systick_handler(system_ticks);
+
 	}
 
 	uint32_t board_millis(void)
@@ -256,6 +259,7 @@ uint32_t board_button_read(void)
 	}
 
 #endif
+
 //--------------------------------------------------------------------+
 
 void HardFault_Handler(void)

@@ -2,9 +2,13 @@
 <EmBitz_debug_session>
 	<debuggerLastSession>
 		<watches>
-			<watch key="USB_HP_IRQ_cnt" format="0" array="0" start="0" count="0" expanded="0" live="1" />
-			<watch key="USB_LP_IRQ_cnt" format="0" array="0" start="0" count="0" expanded="0" live="1" />
 			<watch key="USBWakeUp_IRQ_cnt" format="0" array="0" start="0" count="0" expanded="0" live="0" />
+			<watch key="USB_HP_IRQ_cnt" format="0" array="0" start="0" count="0" expanded="0" live="0" />
+			<watch key="USB_LP_IRQ_cnt" format="0" array="0" start="0" count="0" expanded="0" live="0" />
+			<watch key="p_request" format="0" array="0" start="0" count="0" expanded="0" live="0" />
+			<watch key="stat" format="0" array="1" start="0" count="512" expanded="1" live="0" />
+			<watch key="stat_cnt" format="0" array="0" start="0" count="0" expanded="0" live="1" />
+			<watch key="*p_request" format="0" array="0" start="0" count="0" expanded="1" live="0" />
 		</watches>
 		<memory_view address="0x0" locked="0" live="0" options="290" />
 	</debuggerLastSession>

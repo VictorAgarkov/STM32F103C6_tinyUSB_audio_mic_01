@@ -32,58 +32,66 @@
 #include "common/tusb_fifo.h"
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
 
-typedef enum {
-  DCD_EVENT_INVALID = 0,    // 0
-  DCD_EVENT_BUS_RESET,      // 1
-  DCD_EVENT_UNPLUGGED,      // 2
-  DCD_EVENT_SOF,            // 3
-  DCD_EVENT_SUSPEND,        // 4 TODO LPM Sleep L1 support
-  DCD_EVENT_RESUME,         // 5
-  DCD_EVENT_SETUP_RECEIVED, // 6
-  DCD_EVENT_XFER_COMPLETE,  // 7
-  USBD_EVENT_FUNC_CALL,     // 8 Not an DCD event, just a convenient way to defer ISR function
-  DCD_EVENT_COUNT
+typedef enum
+{
+    DCD_EVENT_INVALID = 0,    // 0
+    DCD_EVENT_BUS_RESET,      // 1
+    DCD_EVENT_UNPLUGGED,      // 2
+    DCD_EVENT_SOF,            // 3
+    DCD_EVENT_SUSPEND,        // 4 TODO LPM Sleep L1 support
+    DCD_EVENT_RESUME,         // 5
+    DCD_EVENT_SETUP_RECEIVED, // 6
+    DCD_EVENT_XFER_COMPLETE,  // 7
+    USBD_EVENT_FUNC_CALL,     // 8 Not an DCD event, just a convenient way to defer ISR function
+    DCD_EVENT_COUNT
 } dcd_eventid_t;
 
-typedef struct TU_ATTR_ALIGNED(4) {
-  uint8_t rhport;
-  uint8_t event_id;
+typedef struct TU_ATTR_ALIGNED(4)
+{
+    uint8_t rhport;
+    uint8_t event_id;
 
-  union {
-    // BUS RESET
-    struct {
-      tusb_speed_t speed;
-    } bus_reset;
+    union
+    {
+        // BUS RESET
+        struct
+        {
+            tusb_speed_t speed;
+        } bus_reset;
 
-    // SOF
-    struct {
-      uint32_t frame_count;
-    }sof;
+        // SOF
+        struct
+        {
+            uint32_t frame_count;
+        } sof;
 
-    // SETUP_RECEIVED
-    tusb_control_request_t setup_received;
+        // SETUP_RECEIVED
+        tusb_control_request_t setup_received;
 
-    // XFER_COMPLETE
-    struct {
-      uint8_t  ep_addr;
-      uint8_t  result;
-      uint32_t len;
-    }xfer_complete;
+        // XFER_COMPLETE
+        struct
+        {
+            uint8_t  ep_addr;
+            uint8_t  result;
+            uint32_t len;
+        } xfer_complete;
 
-    // FUNC_CALL
-    struct {
-      void (*func) (void*);
-      void* param;
-    }func_call;
-  };
-} dcd_event_t;
+        // FUNC_CALL
+        struct
+        {
+            void (*func) (void*);
+            void* param;
+        } func_call;
+    };
+}
+dcd_event_t;
 
 //TU_VERIFY_STATIC(sizeof(dcd_event_t) <= 12, "size is not correct");
 
@@ -193,52 +201,57 @@ void dcd_edpt_close(uint8_t rhport, uint8_t ep_addr);
 extern void dcd_event_handler(dcd_event_t const * event, bool in_isr);
 
 // helper to send bus signal event
-TU_ATTR_ALWAYS_INLINE static inline void dcd_event_bus_signal (uint8_t rhport, dcd_eventid_t eid, bool in_isr) {
-  dcd_event_t event;
-  event.rhport = rhport;
-  event.event_id = eid;
-  dcd_event_handler(&event, in_isr);
+TU_ATTR_ALWAYS_INLINE static inline void dcd_event_bus_signal (uint8_t rhport, dcd_eventid_t eid, bool in_isr)
+{
+    dcd_event_t event;
+    event.rhport = rhport;
+    event.event_id = eid;
+    dcd_event_handler(&event, in_isr);
 }
 
 // helper to send bus reset event
-TU_ATTR_ALWAYS_INLINE static inline  void dcd_event_bus_reset (uint8_t rhport, tusb_speed_t speed, bool in_isr) {
-  dcd_event_t event;
-  event.rhport = rhport;
-  event.event_id = DCD_EVENT_BUS_RESET;
-  event.bus_reset.speed = speed;
-  dcd_event_handler(&event, in_isr);
+TU_ATTR_ALWAYS_INLINE static inline  void dcd_event_bus_reset (uint8_t rhport, tusb_speed_t speed, bool in_isr)
+{
+    dcd_event_t event;
+    event.rhport = rhport;
+    event.event_id = DCD_EVENT_BUS_RESET;
+    event.bus_reset.speed = speed;
+    dcd_event_handler(&event, in_isr);
 }
 
 // helper to send setup received
-TU_ATTR_ALWAYS_INLINE static inline void dcd_event_setup_received(uint8_t rhport, uint8_t const * setup, bool in_isr) {
-  dcd_event_t event;
-  event.rhport = rhport;
-  event.event_id = DCD_EVENT_SETUP_RECEIVED;
-  memcpy(&event.setup_received, setup, sizeof(tusb_control_request_t));
-  dcd_event_handler(&event, in_isr);
+TU_ATTR_ALWAYS_INLINE static inline void dcd_event_setup_received(uint8_t rhport, uint8_t const * setup, bool in_isr)
+{
+    dcd_event_t event;
+    event.rhport = rhport;
+    event.event_id = DCD_EVENT_SETUP_RECEIVED;
+    memcpy(&event.setup_received, setup, sizeof(tusb_control_request_t));
+    dcd_event_handler(&event, in_isr);
 }
 
 // helper to send transfer complete event
-TU_ATTR_ALWAYS_INLINE static inline void dcd_event_xfer_complete (uint8_t rhport, uint8_t ep_addr, uint32_t xferred_bytes, uint8_t result, bool in_isr) {
-  dcd_event_t event;
-  event.rhport = rhport;
-  event.event_id = DCD_EVENT_XFER_COMPLETE;
-  event.xfer_complete.ep_addr = ep_addr;
-  event.xfer_complete.len     = xferred_bytes;
-  event.xfer_complete.result  = result;
-  dcd_event_handler(&event, in_isr);
+TU_ATTR_ALWAYS_INLINE static inline void dcd_event_xfer_complete (uint8_t rhport, uint8_t ep_addr, uint32_t xferred_bytes, uint8_t result, bool in_isr)
+{
+    dcd_event_t event;
+    event.rhport = rhport;
+    event.event_id = DCD_EVENT_XFER_COMPLETE;
+    event.xfer_complete.ep_addr = ep_addr;
+    event.xfer_complete.len     = xferred_bytes;
+    event.xfer_complete.result  = result;
+    dcd_event_handler(&event, in_isr);
 }
 
-TU_ATTR_ALWAYS_INLINE static inline void dcd_event_sof(uint8_t rhport, uint32_t frame_count, bool in_isr) {
-  dcd_event_t event;
-  event.rhport = rhport;
-  event.event_id = DCD_EVENT_SOF;
-  event.sof.frame_count = frame_count;
-  dcd_event_handler(&event, in_isr);
+TU_ATTR_ALWAYS_INLINE static inline void dcd_event_sof(uint8_t rhport, uint32_t frame_count, bool in_isr)
+{
+    dcd_event_t event;
+    event.rhport = rhport;
+    event.event_id = DCD_EVENT_SOF;
+    event.sof.frame_count = frame_count;
+    dcd_event_handler(&event, in_isr);
 }
 
 #ifdef __cplusplus
- }
+}
 #endif
 
 #endif

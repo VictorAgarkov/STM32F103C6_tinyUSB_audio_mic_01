@@ -275,10 +275,14 @@
 		<Unit filename="HAL\Src\stm32f1xx_hal_wwdg.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="inc\goods.h" />
+		<Unit filename="inc\gpio_F1xx.h" />
+		<Unit filename="inc\led_blink.h" />
 		<Unit filename="inc\main.h" />
 		<Unit filename="inc\stm32f103x6.h" />
 		<Unit filename="inc\stm32f1xx.h" />
 		<Unit filename="inc\system_stm32f1xx.h" />
+		<Unit filename="inc\tusb_config.h" />
 		<Unit filename="src\main.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -344,6 +348,15 @@
 				</target_debugging_settings>
 			</debugger>
 			<envvars />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
 		</Extensions>
 	</Project>
 </EmBitz_project_file>

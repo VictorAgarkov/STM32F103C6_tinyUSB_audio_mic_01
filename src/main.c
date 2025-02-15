@@ -36,25 +36,22 @@
 #include <string.h>
 
 #include "bsp/board_api.h"
+#include "stm32f1xx_hal.h"
 #include "tusb.h"
+
+#include "led_blink.h"
+#include "goods.h"
 
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF PROTYPES
 //--------------------------------------------------------------------+
 
-/* Blink pattern
- * - 250 ms  : device not mounted
- * - 1000 ms : device mounted
- * - 2500 ms : device is suspended
- */
-enum
-{
-    BLINK_NOT_MOUNTED = 250,
-    BLINK_MOUNTED = 1000,
-    BLINK_SUSPENDED = 2500,
-};
+// device_state:
+// bit 0 - mounted or not
+// bit 1 - idle or on record
+uint32_t device_state = 0;
 
-static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
+LedBlinkState_t blink_stt = {0,0};
 
 // Audio controls
 // Current states
@@ -71,9 +68,11 @@ audio_control_range_4_n_t(1) sampleFreqRng; 						// Sample frequency range stat
 uint16_t test_buffer_audio[(CFG_TUD_AUDIO_EP_SZ_IN - 2) / 2];
 uint16_t startVal = 0;
 
-void led_blinking_task(void);
 void audio_task(void);
+void led_blinking_routine(void);
 
+
+//------------------------------------------------------------------------------------------------------------------------------
 /*------------- MAIN -------------*/
 int main(void)
 {
@@ -104,25 +103,63 @@ int main(void)
     while (1)
     {
         tud_task(); // tinyusb device task
-        led_blinking_task();
         audio_task();
     }
+}
+//------------------------------------------------------------------------------------------------------------------------------
+
+void update_led_mode(void)
+{
+	const int led_sss[] = {0, 1, 0, 2};
+	if(device_state < NUMOFARRAY(led_sss))
+	{
+		int new_mode = led_sss[device_state];
+
+		if(new_mode != blink_stt.idx)
+		{
+			LED_BLINK_SET(blink_stt, new_mode);
+		}
+	}
+}
+//------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------
+void user_systick_handler(uint32_t tick_count)
+{
+	if(tick_count % 10 == 0)
+	{
+		led_blinking_routine();
+	}
 }
 
 //--------------------------------------------------------------------+
 // Device callbacks
+// Вызываются в следующем порядке:
+// при подключении к USB:
+//    1. tud_suspend_cb(0)
+//    2. tud_resume_cb()
+//    3. tud_mount_cb()
+// при отключении от USB:
+//    1. tud_suspend_cb(0)
+// при повторном подключении к USB:
+//    1. tud_resume_cb()
+//    2. tud_suspend_cb(0)
+//    3. tud_resume_cb()
+//    4. tud_mount_cb()
+//
+// 'tud_umount_cb' не вызываются
 //--------------------------------------------------------------------+
+//------------------------------------------------------------------------------------------------------------------------------
 
 // Invoked when device is mounted
 void tud_mount_cb(void)
 {
-    blink_interval_ms = BLINK_MOUNTED;
+    device_state = 1;
+    update_led_mode();
 }
 
 // Invoked when device is unmounted
 void tud_umount_cb(void)
 {
-    blink_interval_ms = BLINK_NOT_MOUNTED;
 }
 
 // Invoked when usb bus is suspended
@@ -131,18 +168,20 @@ void tud_umount_cb(void)
 void tud_suspend_cb(bool remote_wakeup_en)
 {
     (void) remote_wakeup_en;
-    blink_interval_ms = BLINK_SUSPENDED;
+    device_state = 0;
+    update_led_mode();
 }
 
 // Invoked when usb bus is resumed
 void tud_resume_cb(void)
 {
-    blink_interval_ms = tud_mounted() ? BLINK_MOUNTED : BLINK_NOT_MOUNTED;
 }
+//------------------------------------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------+
 // AUDIO Task
 //--------------------------------------------------------------------+
+//------------------------------------------------------------------------------------------------------------------------------
 
 void audio_task(void)
 {
@@ -153,10 +192,16 @@ void audio_task(void)
 //--------------------------------------------------------------------+
 // Application Callback API Implementations
 //--------------------------------------------------------------------+
+//------------------------------------------------------------------------------------------------------------------------------
+
+//volatile uint32_t stat[512];
+//int stat_cnt = 0;
 
 // Invoked when audio class specific set request received for an EP
 bool tud_audio_set_req_ep_cb(uint8_t rhport, tusb_control_request_t const * p_request, uint8_t *pBuff)
 {
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 100;
+
     (void) rhport;
     (void) pBuff;
 
@@ -174,10 +219,12 @@ bool tud_audio_set_req_ep_cb(uint8_t rhport, tusb_control_request_t const * p_re
 
     return false; 	// Yet not implemented
 }
+//------------------------------------------------------------------------------------------------------------------------------
 
 // Invoked when audio class specific set request received for an interface
 bool tud_audio_set_req_itf_cb(uint8_t rhport, tusb_control_request_t const * p_request, uint8_t *pBuff)
 {
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 101;
     (void) rhport;
     (void) pBuff;
 
@@ -193,8 +240,10 @@ bool tud_audio_set_req_itf_cb(uint8_t rhport, tusb_control_request_t const * p_r
     (void) ctrlSel;
     (void) itf;
 
+
     return false; 	// Yet not implemented
 }
+//------------------------------------------------------------------------------------------------------------------------------
 
 // Invoked when audio class specific set request received for an entity
 bool tud_audio_set_req_entity_cb(uint8_t rhport, tusb_control_request_t const * p_request, uint8_t *pBuff)
@@ -206,6 +255,12 @@ bool tud_audio_set_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
     uint8_t ctrlSel = TU_U16_HIGH(p_request->wValue);
     uint8_t itf = TU_U16_LOW(p_request->wIndex);
     uint8_t entityID = TU_U16_HIGH(p_request->wIndex);
+
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 102;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = entityID  ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = ctrlSel   ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = channelNum;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = itf       ;
 
     (void) itf;
 
@@ -243,6 +298,7 @@ bool tud_audio_set_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
     }
     return false;    // Yet not implemented
 }
+//------------------------------------------------------------------------------------------------------------------------------
 
 // Invoked when audio class specific get request received for an EP
 bool tud_audio_get_req_ep_cb(uint8_t rhport, tusb_control_request_t const * p_request)
@@ -251,8 +307,15 @@ bool tud_audio_get_req_ep_cb(uint8_t rhport, tusb_control_request_t const * p_re
 
     // Page 91 in UAC2 specification
     uint8_t channelNum = TU_U16_LOW(p_request->wValue);
-    uint8_t ctrlSel = TU_U16_HIGH(p_request->wValue);
-    uint8_t ep = TU_U16_LOW(p_request->wIndex);
+    uint8_t ctrlSel    = TU_U16_HIGH(p_request->wValue);
+    uint8_t ep         = TU_U16_LOW(p_request->wIndex);
+
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 103;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = ep        ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = ctrlSel   ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = channelNum;
+//
+
 
     (void) channelNum;
     (void) ctrlSel;
@@ -262,6 +325,7 @@ bool tud_audio_get_req_ep_cb(uint8_t rhport, tusb_control_request_t const * p_re
 
     return false; 	// Yet not implemented
 }
+//------------------------------------------------------------------------------------------------------------------------------
 
 // Invoked when audio class specific get request received for an interface
 bool tud_audio_get_req_itf_cb(uint8_t rhport, tusb_control_request_t const * p_request)
@@ -273,12 +337,19 @@ bool tud_audio_get_req_itf_cb(uint8_t rhport, tusb_control_request_t const * p_r
     uint8_t ctrlSel = TU_U16_HIGH(p_request->wValue);
     uint8_t itf = TU_U16_LOW(p_request->wIndex);
 
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 104;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = itf       ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = ctrlSel   ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = channelNum;
+
+
     (void) channelNum;
     (void) ctrlSel;
     (void) itf;
 
     return false; 	// Yet not implemented
 }
+//------------------------------------------------------------------------------------------------------------------------------
 
 // Invoked when audio class specific get request received for an entity
 bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const * p_request)
@@ -287,9 +358,17 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
 
     // Page 91 in UAC2 specification
     uint8_t channelNum = TU_U16_LOW(p_request->wValue);
-    uint8_t ctrlSel = TU_U16_HIGH(p_request->wValue);
-    // uint8_t itf = TU_U16_LOW(p_request->wIndex); 			// Since we have only one audio function implemented, we do not need the itf value
-    uint8_t entityID = TU_U16_HIGH(p_request->wIndex);
+    uint8_t ctrlSel    = TU_U16_HIGH(p_request->wValue);
+    uint8_t itf        = TU_U16_LOW(p_request->wIndex); 			// Since we have only one audio function implemented, we do not need the itf value
+    uint8_t entityID   = TU_U16_HIGH(p_request->wIndex);
+
+
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 105;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = entityID  ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = ctrlSel   ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = channelNum;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = itf       ;
+
 
     // Input terminal (Microphone input)
     if (entityID == 1)
@@ -341,8 +420,7 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
                 TU_LOG2("    Get Volume range of channel: %u\r\n", channelNum);
 
                 // Copy values - only for testing - better is version below
-                audio_control_range_2_n_t(1)
-                ret;
+                audio_control_range_2_n_t(1) ret;
 
                 ret.wNumSubRanges = 1;
                 ret.subrange[0].bMin = -90;    // -90 dB
@@ -404,9 +482,11 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
     TU_LOG2("  Unsupported entity: %d\r\n", entityID);
     return false; 	// Yet not implemented
 }
+//------------------------------------------------------------------------------------------------------------------------------
 
 bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, uint8_t cur_alt_setting)
 {
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 106;
     (void) rhport;
     (void) itf;
     (void) ep_in;
@@ -414,11 +494,16 @@ bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, u
 
     tud_audio_write ((uint8_t *)test_buffer_audio, CFG_TUD_AUDIO_EP_SZ_IN - 2);
 
+    device_state |= 2;
+    update_led_mode();
+
     return true;
 }
+//------------------------------------------------------------------------------------------------------------------------------
 
 bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uint8_t itf, uint8_t ep_in, uint8_t cur_alt_setting)
 {
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 107;
     (void) rhport;
     (void) n_bytes_copied;
     (void) itf;
@@ -432,28 +517,66 @@ bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uin
 
     return true;
 }
+//------------------------------------------------------------------------------------------------------------------------------
 
 bool tud_audio_set_itf_close_EP_cb(uint8_t rhport, tusb_control_request_t const * p_request)
 {
     (void) rhport;
-    (void) p_request;
+//    (void) p_request;
     startVal = 0;
+
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 108;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = p_request->bRequest ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = p_request->wValue ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = p_request->wIndex ;
+//	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = p_request->wLength ;
+
+    device_state &= ~2;
+    update_led_mode();
 
     return true;
 }
+//------------------------------------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------+
 // BLINKING TASK
+// вызывать 100 раз/сек
 //--------------------------------------------------------------------+
-void led_blinking_task(void)
+void led_blinking_routine(void)
 {
-    static uint32_t start_ms = 0;
-    static bool led_state = false;
+	const uint8_t led_off[]     = {0, -1};  // светик потушен
+	const uint8_t led_on[]      = {-1};     // светик горит
+	const uint8_t led_blink_1[] = {8, 3};   // часто мигает
+	const uint8_t led_blink_2[] = {3, 150};   // редко вспыхивает
 
-    // Blink every interval ms
-    if ( board_millis() - start_ms < blink_interval_ms) return; // not enough time
-    start_ms += blink_interval_ms;
+	const LedBlinkSet_t blink_sets[] =
+	{
+		LED_BLINK_ITEM(led_off),
+		LED_BLINK_ITEM(led_on),
+		LED_BLINK_ITEM(led_blink_1),
+		LED_BLINK_ITEM(led_blink_2),
+		//LED_BLINK_ITEM(),
+	};
 
-    board_led_write(led_state);
-    led_state = 1 - led_state; // toggle
+	if(blink_stt.idx >= NUMOFARRAY(blink_sets)) return;
+
+	const LedBlinkSet_t *fset = blink_sets + blink_stt.idx;
+
+	if(fset->set[blink_stt.offs] != -1)
+	{
+		while(blink_stt.time >= fset->set[blink_stt.offs])
+		{
+			if(++blink_stt.offs >= fset->num) blink_stt.offs = 0;
+			blink_stt.time = 0;
+		}
+		blink_stt.time++;
+	}
+
+	int led_val = !(blink_stt.offs & 1);
+
+	board_led_write(led_val);
+
 }
+//------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------
