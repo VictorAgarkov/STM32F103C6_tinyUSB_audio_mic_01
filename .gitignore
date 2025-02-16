@@ -10,3 +10,4 @@
 *.cscope_file_list
 cscope.out
 1-cppcheck-build-dir/
+__/

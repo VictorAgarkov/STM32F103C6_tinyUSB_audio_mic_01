@@ -65,14 +65,19 @@ audio_control_range_2_n_t(1) volumeRng[CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX+1]; 		
 audio_control_range_4_n_t(1) sampleFreqRng; 						// Sample frequency range state
 
 // Audio test data
-uint16_t test_buffer_audio[(CFG_TUD_AUDIO_EP_SZ_IN - 2) / 2];
-uint16_t startVal = 0;
+uint16_t test_buffer_audio[CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE / 1000 * CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX];
+int16_t startVal = 0;
 
 void audio_task(void);
 void led_blinking_routine(void);
 
 
 //------------------------------------------------------------------------------------------------------------------------------
+/*
+  + TUD_AUDIO_DESC_FEATURE_UNIT_ONE_CHANNEL_LEN
+
+*/
+
 /*------------- MAIN -------------*/
 int main(void)
 {
@@ -369,6 +374,7 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
 //	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = channelNum;
 //	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = itf       ;
 
+	(void) itf;
 
     // Input terminal (Microphone input)
     if (entityID == 1)
@@ -492,7 +498,7 @@ bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, u
     (void) ep_in;
     (void) cur_alt_setting;
 
-    tud_audio_write ((uint8_t *)test_buffer_audio, CFG_TUD_AUDIO_EP_SZ_IN - 2);
+    tud_audio_write ((uint8_t *)test_buffer_audio, sizeof(test_buffer_audio));
 
     device_state |= 2;
     update_led_mode();
@@ -510,9 +516,19 @@ bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uin
     (void) ep_in;
     (void) cur_alt_setting;
 
-    for (size_t cnt = 0; cnt < (CFG_TUD_AUDIO_EP_SZ_IN - 2) / 2; cnt++)
+    for (size_t cnt = 0; cnt < NUMOFARRAY(test_buffer_audio) / CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX; cnt++)
     {
-        test_buffer_audio[cnt] = startVal++;
+    	int ii = cnt * CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX;
+    	for(uint32_t c = 0; c < CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX; c++)
+		{
+			test_buffer_audio[ii + c] = startVal + c * 0x10000 * 11 / 16;
+		}
+//    	if(CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX >= 1)    test_buffer_audio[ii + 0] =  startVal;
+//    	if(CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX >= 2)    test_buffer_audio[ii + 1] = -startVal;
+//    	if(CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX >= 3)    test_buffer_audio[ii + 2] =  startVal > 0 ? 32767 : -32767;
+//    	if(CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX >= 4)    test_buffer_audio[ii + 3] =  startVal < 0 ? 32767 : -32767;
+
+		startVal++;
     }
 
     return true;
