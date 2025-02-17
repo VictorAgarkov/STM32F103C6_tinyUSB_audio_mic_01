@@ -55,10 +55,13 @@ LedBlinkState_t blink_stt = {0,0};
 
 // Audio controls
 // Current states
-bool mute[CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX + 1]; 				          // +1 for master channel 0
-uint16_t volume[CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX + 1]; 					// +1 for master channel 0
-uint32_t sampFreq;
-uint8_t clkValid;
+//bool       mute[CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX + 1];       // +1 for master channel 0
+//int16_t    volume[CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX + 1];     // +1 for master channel 0
+bool       mute;       // master channel 0
+int16_t    volume_dB;  // master channel 0
+int32_t    volume_k = 0x10000;
+uint32_t   sampFreq;
+uint8_t    clkValid;
 
 // Range states
 audio_control_range_2_n_t(1) volumeRng[CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX+1]; 			// Volume range state
@@ -70,7 +73,7 @@ int16_t startVal = 0;
 
 void audio_task(void);
 void led_blinking_routine(void);
-
+uint32_t get_volume_from_dB(int dB);
 
 //------------------------------------------------------------------------------------------------------------------------------
 /*
@@ -81,6 +84,7 @@ void led_blinking_routine(void);
 /*------------- MAIN -------------*/
 int main(void)
 {
+
     board_init();
 
     // init device stack on configured roothub port
@@ -127,6 +131,35 @@ void update_led_mode(void)
 	}
 }
 //------------------------------------------------------------------------------------------------------------------------------
+/*
+	РџРѕР»СѓС‡Р°РµРј СѓСЂРѕРІРµРЅСЊ РіСЂРѕРјРєРѕСЃС‚Рё (РєРѕСЌС„С„. РґР»СЏ СѓРјРЅРѕР¶РµРЅРёСЏ) РёР· dB
+	Р’РѕР·РІСЂР°С‚ РІ С„РѕСЂРјР°С‚Рµ 16.16
+*/
+uint32_t get_volume_from_dB(int dB)
+{
+	const uint32_t pow2_6[] =
+	{
+		1.0000 * 0x80000000, // 2^(0/6) === 84dB
+		1.1224 * 0x80000000, // 2^(1/6)
+		1.2599 * 0x80000000, // 2^(2/6)
+		1.4142 * 0x80000000, // 2^(3/6)
+		1.5874 * 0x80000000, // 2^(4/6)
+		1.7817 * 0x80000000, // 2^(5/6)
+	};
+
+	if(dB >= +96) return 0xffffffff;
+	if(dB <= -96) return 0;
+
+	int shift;
+	int idx;
+
+	dB += 96; // all values to positive
+
+	shift = 15 + 16 - dB / 6;
+	idx = dB % 6;
+
+	return pow2_6[idx] >> shift;
+}
 //------------------------------------------------------------------------------------------------------------------------------
 void user_systick_handler(uint32_t tick_count)
 {
@@ -138,20 +171,20 @@ void user_systick_handler(uint32_t tick_count)
 
 //--------------------------------------------------------------------+
 // Device callbacks
-// Вызываются в следующем порядке:
-// при подключении к USB:
+// Р’С‹Р·С‹РІР°СЋС‚СЃСЏ РІ СЃР»РµРґСѓСЋС‰РµРј РїРѕСЂСЏРґРєРµ:
+// РїСЂРё РїРѕРґРєР»СЋС‡РµРЅРёРё Рє USB:
 //    1. tud_suspend_cb(0)
 //    2. tud_resume_cb()
 //    3. tud_mount_cb()
-// при отключении от USB:
+// РїСЂРё РѕС‚РєР»СЋС‡РµРЅРёРё РѕС‚ USB:
 //    1. tud_suspend_cb(0)
-// при повторном подключении к USB:
+// РїСЂРё РїРѕРІС‚РѕСЂРЅРѕРј РїРѕРґРєР»СЋС‡РµРЅРёРё Рє USB:
 //    1. tud_resume_cb()
 //    2. tud_suspend_cb(0)
 //    3. tud_resume_cb()
 //    4. tud_mount_cb()
 //
-// 'tud_umount_cb' не вызываются
+// 'tud_umount_cb' РЅРµ РІС‹Р·С‹РІР°СЋС‚СЃСЏ
 //--------------------------------------------------------------------+
 //------------------------------------------------------------------------------------------------------------------------------
 
@@ -281,18 +314,25 @@ bool tud_audio_set_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
             // Request uses format layout 1
             TU_VERIFY(p_request->wLength == sizeof(audio_control_cur_1_t));
 
-            mute[channelNum] = ((audio_control_cur_1_t*) pBuff)->bCur;
+            //mute[channelNum] = ((audio_control_cur_1_t*) pBuff)->bCur;
+            if(channelNum == 0) mute =  ((audio_control_cur_1_t*) pBuff)->bCur;
 
-            TU_LOG2("    Set Mute: %d of channel: %u\r\n", mute[channelNum], channelNum);
+            //TU_LOG2("    Set Mute: %d of channel: %u\r\n", mute[channelNum], channelNum);
             return true;
 
         case AUDIO_FU_CTRL_VOLUME:
             // Request uses format layout 2
             TU_VERIFY(p_request->wLength == sizeof(audio_control_cur_2_t));
 
-            volume[channelNum] = (uint16_t) ((audio_control_cur_2_t*) pBuff)->bCur;
+            //volume[channelNum] = (uint16_t) ((audio_control_cur_2_t*) pBuff)->bCur;
+            if(channelNum == 0)
+			{
+				volume_dB = (uint16_t) ((audio_control_cur_2_t*) pBuff)->bCur;
+				volume_k = get_volume_from_dB(volume_dB);
+			}
 
-            TU_LOG2("    Set Volume: %d dB of channel: %u\r\n", volume[channelNum], channelNum);
+
+            //TU_LOG2("    Set Volume: %d dB of channel: %u\r\n", volume[channelNum], channelNum);
             return true;
 
         // Unknown/Unsupported control
@@ -375,6 +415,7 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
 //	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = itf       ;
 
 	(void) itf;
+	(void) channelNum;
 
     // Input terminal (Microphone input)
     if (entityID == 1)
@@ -413,14 +454,16 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
             // Audio control mute cur parameter block consists of only one byte - we thus can send it right away
             // There does not exist a range parameter block for mute
             TU_LOG2("    Get Mute of channel: %u\r\n", channelNum);
-            return tud_control_xfer(rhport, p_request, &mute[channelNum], 1);
+            //return tud_control_xfer(rhport, p_request, &mute[channelNum], 1);
+            return tud_control_xfer(rhport, p_request, &mute, 1);
 
         case AUDIO_FU_CTRL_VOLUME:
             switch ( p_request->bRequest )
             {
             case AUDIO_CS_REQ_CUR:
                 TU_LOG2("    Get Volume of channel: %u\r\n", channelNum);
-                return tud_control_xfer(rhport, p_request, &volume[channelNum], sizeof(volume[channelNum]));
+                //return tud_control_xfer(rhport, p_request, &volume[channelNum], sizeof(volume[channelNum]));
+                return tud_control_xfer(rhport, p_request, &volume_dB, sizeof(volume_dB));
 
             case AUDIO_CS_REQ_RANGE:
                 TU_LOG2("    Get Volume range of channel: %u\r\n", channelNum);
@@ -429,9 +472,9 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
                 audio_control_range_2_n_t(1) ret;
 
                 ret.wNumSubRanges = 1;
-                ret.subrange[0].bMin = -90;    // -90 dB
-                ret.subrange[0].bMax = 90;		// +90 dB
-                ret.subrange[0].bRes = 1; 		// 1 dB steps
+                ret.subrange[0].bMin = -50;   // -50 dB
+                ret.subrange[0].bMax = +50;   // +50 dB
+                ret.subrange[0].bRes = 1;     // 1 dB steps
 
                 return tud_audio_buffer_and_schedule_control_xfer(rhport, p_request, (void*) &ret, sizeof(ret));
 
@@ -521,7 +564,18 @@ bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uin
     	int ii = cnt * CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX;
     	for(uint32_t c = 0; c < CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX; c++)
 		{
-			test_buffer_audio[ii + c] = startVal + c * 0x10000 * 11 / 16;
+			if(mute) test_buffer_audio[ii + c] = 0;
+			else
+			{
+				int16_t v16 = startVal + c * 0x10000 * 11 / 16;
+				int64_t v64 = v16;
+				v64 *= volume_k;
+				v64 >>= 16;
+
+				const int lim15 = 32767;
+
+				test_buffer_audio[ii + c] = lim(-lim15, v64, lim15);
+			}
 		}
 //    	if(CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX >= 1)    test_buffer_audio[ii + 0] =  startVal;
 //    	if(CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX >= 2)    test_buffer_audio[ii + 1] = -startVal;
@@ -556,14 +610,14 @@ bool tud_audio_set_itf_close_EP_cb(uint8_t rhport, tusb_control_request_t const 
 
 //--------------------------------------------------------------------+
 // BLINKING TASK
-// вызывать 100 раз/сек
+// РІС‹Р·С‹РІР°С‚СЊ 100 СЂР°Р·/СЃРµРє
 //--------------------------------------------------------------------+
 void led_blinking_routine(void)
 {
-	const uint8_t led_off[]     = {0, -1};  // светик потушен
-	const uint8_t led_on[]      = {-1};     // светик горит
-	const uint8_t led_blink_1[] = {8, 3};   // часто мигает
-	const uint8_t led_blink_2[] = {3, 150};   // редко вспыхивает
+	const uint8_t led_off[]     = {0, -1};  // СЃРІРµС‚РёРє РїРѕС‚СѓС€РµРЅ
+	const uint8_t led_on[]      = {-1};     // СЃРІРµС‚РёРє РіРѕСЂРёС‚
+	const uint8_t led_blink_1[] = {8, 3};   // С‡Р°СЃС‚Рѕ РјРёРіР°РµС‚
+	const uint8_t led_blink_2[] = {3, 150};   // СЂРµРґРєРѕ РІСЃРїС‹С…РёРІР°РµС‚
 
 	const LedBlinkSet_t blink_sets[] =
 	{
