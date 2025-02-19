@@ -2,12 +2,13 @@
 <EmBitz_debug_session>
 	<debuggerLastSession>
 		<watches>
-			<watch key="g_AdcAcc" format="0" array="1" start="0" count="10" expanded="0" live="0" />
-			<watch key="g_AdcAccCnt" format="0" array="0" start="0" count="0" expanded="0" live="0" />
-			<watch key="g_AdcAvgBuff" format="0" array="1" start="0" count="32" expanded="0" live="0" />
-			<watch key="g_AdcAvgBuffCnt" format="0" array="0" start="0" count="0" expanded="0" live="0" />
-			<watch key="g_AdcDmaBuff" format="0" array="0" start="0" count="0" expanded="0" live="0" />
-			<watch key="stat" format="0" array="0" start="0" count="100" expanded="1" live="0" />
+			<watch key="g_AdcAvgBuff" format="0" array="0" start="0" count="0" expanded="0" live="0" />
+			<watch key="g_AdcAvgBuffCnt" format="0" array="0" start="0" count="0" expanded="1" live="1" />
+			<watch key="g_AdcAvgNum" format="0" array="0" start="0" count="0" expanded="0" live="0" />
+			<watch key="g_AdcCtrl" format="3" array="0" start="0" count="0" expanded="0" live="0" />
+			<watch key="g_AdcIntCnt" format="0" array="0" start="0" count="0" expanded="0" live="0" />
+			<watch key="stat" format="0" array="1" start="0" count="32" expanded="1" live="0" />
+			<watch key="zero_len_cnt" format="0" array="0" start="0" count="0" expanded="0" live="0" />
 		</watches>
 		<memory_view address="0x0" locked="0" live="0" options="290" />
 	</debuggerLastSession>

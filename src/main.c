@@ -75,11 +75,13 @@ audio_control_range_4_n_t(1) sampleFreqRng; 						// Sample frequency range stat
 uint16_t test_buffer_audio[CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE / 1000 * CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX];
 int16_t startVal = 0;
 int     bytes_to_send = 0;
+char g_DeviceName[32];
 
 void audio_task(void);
 void led_blinking_routine(void);
 uint32_t get_volume_from_dB(int dB);
-
+void make_device_name(void);
+uint32_t board_get_ctrl_pins(void);
 //------------------------------------------------------------------------------------------------------------------------------
 /*
   + TUD_AUDIO_DESC_FEATURE_UNIT_ONE_CHANNEL_LEN
@@ -91,6 +93,7 @@ int main(void)
 {
 
     board_init();
+    make_device_name();
 
     // init device stack on configured roothub port
     tusb_rhport_init_t dev_init =
@@ -121,6 +124,16 @@ int main(void)
         tud_task(); // tinyusb device task
         audio_task();
     }
+}
+//------------------------------------------------------------------------------------------------------------------------------
+void make_device_name(void)
+{
+	strcpy(g_DeviceName, "TinyUSB MIC ");
+	itoa(CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX, g_DeviceName + strlen(g_DeviceName), 10);
+	strcat(g_DeviceName, "ch/");
+	itoa(adc_get_actual_sample_rate() / 1000, g_DeviceName + strlen(g_DeviceName), 10);
+	strcat(g_DeviceName, "kHz");
+	//
 }
 //------------------------------------------------------------------------------------------------------------------------------
 
@@ -168,12 +181,28 @@ uint32_t get_volume_from_dB(int dB)
 	return pow2_6[idx] >> shift;
 }
 //------------------------------------------------------------------------------------------------------------------------------
+//int adc_sample_rate = 0;
+//uint32_t adc_last_cnt;
+//extern volatile int g_AdcIntCnt;
 void user_systick_handler(uint32_t tick_count)
 {
-	if(tick_count % 10 == 0)
+	uint32_t tc10 = tick_count % 10;
+	if(tc10 == 0)
 	{
 		led_blinking_routine();
 	}
+	else if(tc10 == 1)
+	{
+		uint32_t ctrl_pins = board_get_ctrl_pins();
+		g_AdcCtrl = (ctrl_pins >> 0) & 0x07;
+	}
+
+//	if(tick_count % 1000 == 100)
+//	{
+//		uint32_t i = g_AdcIntCnt;
+//		adc_sample_rate = i - adc_last_cnt;
+//		adc_last_cnt = i;
+//	}
 }
 
 //--------------------------------------------------------------------+
@@ -239,8 +268,8 @@ void audio_task(void)
 //--------------------------------------------------------------------+
 //------------------------------------------------------------------------------------------------------------------------------
 
-volatile uint32_t stat[512];
-int stat_cnt = 0;
+//volatile uint32_t stat[512];
+//int stat_cnt = 0;
 
 // Invoked when audio class specific set request received for an EP
 bool tud_audio_set_req_ep_cb(uint8_t rhport, tusb_control_request_t const * p_request, uint8_t *pBuff)
@@ -543,10 +572,10 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const * 
     return false; 	// Yet not implemented
 }
 //------------------------------------------------------------------------------------------------------------------------------
-
 bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, uint8_t cur_alt_setting)
 {
 //	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 106;
+//	if(bytes_to_send < NUMOFARRAY(stat)) stat[bytes_to_send]++;
     (void) rhport;
     (void) itf;
     (void) ep_in;
@@ -562,7 +591,7 @@ bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, u
     return true;
 }
 //------------------------------------------------------------------------------------------------------------------------------
-
+//volatile uint32_t last_bytes_to_send = 0;
 bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uint8_t itf, uint8_t ep_in, uint8_t cur_alt_setting)
 {
 //	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 107;
@@ -605,12 +634,13 @@ bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uin
 //		startVal++;
 //    }
 
-	disable_irq;
-		bytes_to_send = g_AdcAvgBuffCnt * sizeof(g_AdcAvgBuff[0]) * ADC_CHN_NUM;
-		memcpy(test_buffer_audio, g_AdcAvgBuff, bytes_to_send);
-		//if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = g_AdcAvgBuffCnt;
-		g_AdcAvgBuffCnt = 0;
-	enable_irq;
+		int buff_idx = g_AdvAvgBuffIdx;
+		adc_set_buff_idx(!buff_idx);
+		int fill_cnt = g_AdcAvgBuffCnt[buff_idx];
+
+		bytes_to_send = fill_cnt * sizeof(g_AdcAvgBuff[0][0]) * ADC_CHN_NUM;
+		memcpy(test_buffer_audio, g_AdcAvgBuff[buff_idx], bytes_to_send);
+		g_AdcAvgBuffCnt[buff_idx] = 0;
 
     return true;
 }
@@ -643,7 +673,7 @@ void led_blinking_routine(void)
 {
 	const uint8_t led_off[]     = {0, -1};  // светик потушен
 	const uint8_t led_on[]      = {-1};     // светик горит
-	const uint8_t led_blink_1[] = {8, 3};   // часто мигает
+	const uint8_t led_blink_1[] = {25,25};   // часто мигает
 	const uint8_t led_blink_2[] = {3, 150};   // редко вспыхивает
 
 	const LedBlinkSet_t blink_sets[] =

@@ -308,14 +308,16 @@ void dcd_int_enable(uint8_t rhport) {
   // shared USB/CAN IRQs to separate CAN and USB IRQs.
   // This dynamically checks if this remap is active to enable the right IRQs.
   if (SYSCFG->CFGR1 & SYSCFG_CFGR1_USB_IT_RMP) {
-    NVIC_EnableIRQ(USB_HP_IRQn);
-    NVIC_EnableIRQ(USB_LP_IRQn);
+    NVIC_EnableIRQ(USB_HP_IRQn       );
+    NVIC_EnableIRQ(USB_LP_IRQn       );
     NVIC_EnableIRQ(USBWakeUp_RMP_IRQn);
+
   } else
   #endif
   {
     for (uint8_t i = 0; i < FSDEV_IRQ_NUM; i++) {
       NVIC_EnableIRQ(fsdev_irq[i]);
+      NVIC_SetPriority(fsdev_irq[i], 5);
     }
   }
 }

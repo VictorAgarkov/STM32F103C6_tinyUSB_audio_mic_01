@@ -56,6 +56,18 @@ struct s_PinDef g_PinsOut[] =
 	{GPIOC, 13,  GPIO_Speed_10MHz | GPIO_Mode_OUT_PP,  1},  // LED
 };
 
+struct s_PinDef g_PinsCtrl[] =
+{
+	{GPIOB, 12,  GPIO_Speed_input | GPIO_Mode_IN_PULL,  1},  // ctrl1: 1 - ADC operation, 0 - imitation signal
+	{GPIOB, 13,  GPIO_Speed_input | GPIO_Mode_IN_PULL,  1},  // ctrl2: 1 - full scale,    0 - real 12-bit ADC scale
+	{GPIOB, 14,  GPIO_Speed_input | GPIO_Mode_IN_PULL,  1},  // ctrl2: 1 - ADC oversampling/average, 0 - single ADC sample
+};
+
+//struct s_PinDef g_PinsDbg[] =
+//{
+//	//{GPIOC, 13,  GPIO_Speed_10MHz | GPIO_Mode_OUT_PP,  1},  // LED
+//};
+
 
 // all pins
 const struct s_PinDefSet all_pins[] =
@@ -69,6 +81,20 @@ const struct s_PinDefSet all_pins[] =
 #ifdef USB_CONNECT_PIN
 	#define pin_UsbPullup g_PinsUsb[0]
 #endif
+
+//--------------------------------------------------------------------+
+// ѕолучаем
+uint32_t board_get_ctrl_pins(void)
+{
+	uint32_t ret = 0;
+	for(int i = 0; i < NUMOFARRAY(g_PinsCtrl); i++)
+	{
+		ret <<= 1;
+		ret |= GPIO_GET_PIN(g_PinsCtrl[NUMOFARRAY(g_PinsCtrl) - i - 1]);
+	}
+	return ret;
+}
+
 
 //--------------------------------------------------------------------+
 
@@ -171,6 +197,8 @@ void board_init(void)
 	#if CFG_TUSB_OS == OPT_OS_NONE
 		// 1ms tick timer
 		SysTick_Config(SystemCoreClock / 1000);
+		NVIC_SetPriority(SysTick_IRQn, 3);
+
 
 	#endif
     RCC->APB1ENR |= RCC_APB1ENR_USBEN;
@@ -260,6 +288,22 @@ uint32_t board_button_read(void)
 
 #endif
 
+//--------------------------------------------------------------------+
+//// сбрасываем - устанавливаем GPIO из массива g_PinsDbg
+//// to_set, to_reset - битовые маски пинов, которые нужно установить/сбросить
+//
+//void set_dbg_pin(uint32_t to_set, uint32_t to_reset)
+//{
+//	for(int i = 0; (i < NUMOFARRAY(g_PinsDbg)) && (to_set | to_reset); i++)
+//	{
+////		if (to_set   & 1) GPIO_BIT_SET(g_PinsDbg[i]);
+////		if (to_reset & 1) GPIO_BIT_RESET(g_PinsDbg[i]);
+//		if (to_set   & 1) GPIO_OUT_VAL(g_PinsDbg[i], 1);
+//		if (to_reset & 1) GPIO_OUT_VAL(g_PinsDbg[i], 0);
+//		to_set   >>= 1;
+//		to_reset >>= 1;
+//	}
+//}
 //--------------------------------------------------------------------+
 
 void HardFault_Handler(void)

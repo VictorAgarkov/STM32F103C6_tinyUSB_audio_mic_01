@@ -114,7 +114,7 @@ extern "C" {
 // Have a look into audio_device.h for all configurations
 
 
-#define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX                            4                                      // Driver gets this info from the descriptors - we define it here to use it to setup the descriptors and to do calculations with it below - be aware: for different number of channels you need another descriptor!
+#define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX                            1                                      // Driver gets this info from the descriptors - we define it here to use it to setup the descriptors and to do calculations with it below - be aware: for different number of channels you need another descriptor!
 //#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN                                 TUD_AUDIO_MIC_ONE_CH_DESC_LEN
 #define CFG_TUD_AUDIO_FUNC_1_N_AS_INT                                 1                                       // Number of Standard AS Interface Descriptors (4.9.1) defined per audio function - this is required to be able to remember the current alternate settings of these interfaces - We restrict us here to have a constant number for all audio functions (which means this has to be the maximum number of AS interfaces an audio function has and a second audio function with less AS interfaces just wastes a few bytes)
 #define CFG_TUD_AUDIO_FUNC_1_CTRL_BUF_SZ                              64                                      // Size of control request buffer
@@ -125,7 +125,7 @@ extern "C" {
 #define CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX                             CFG_TUD_AUDIO_EP_SZ_IN
 #define CFG_TUD_AUDIO_FUNC_1_EP_IN_SW_BUF_SZ                          (TUD_OPT_HIGH_SPEED ? 8 : 1) * CFG_TUD_AUDIO_EP_SZ_IN // Example write FIFO every 1ms, so it should be 8 times larger for HS device
 #define CFG_USE_FEATURE_UNIT                                          0   // enable "Feature Unit" (volume/mute control)
-
+#define CFG_ADC_ALTERNATION_EN                                        1  // перемежение входных каналов АЦП и канала температуры при оцифровке, для уменьшения влияния соседних каналов друг на друга (только при кол-ве каналов от 2 до 8)
 
 
 #if CFG_USE_FEATURE_UNIT
@@ -133,49 +133,24 @@ extern "C" {
 		#define CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE     48000
 		#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN        TUD_AUDIO_MIC_ONE_CH_DESC_LEN
 		#define TUD_AUDIO_MIC_SOME_CH_DESCRIPTOR     TUD_AUDIO_MIC_ONE_CH_DESCRIPTOR
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 1-ch"
 	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 2
 		#define CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE     48000
 		#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN        TUD_AUDIO_MIC_TWO_CH_DESC_LEN
 		#define TUD_AUDIO_MIC_SOME_CH_DESCRIPTOR     TUD_AUDIO_MIC_TWO_CH_DESCRIPTOR
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 2-ch"
 	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 4
 		#define CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE     24000
 		#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN        TUD_AUDIO_MIC_FOUR_CH_DESC_LEN
 		#define TUD_AUDIO_MIC_SOME_CH_DESCRIPTOR     TUD_AUDIO_MIC_FOUR_CH_DESCRIPTOR
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 4-ch"
 	#else
 		#error "Unsupported channels number for enabled Feature Unit (CFG_USE_FEATURE_UNIT != 0)"
 	#endif
 #else // CFG_USE_FEATURE_UNIT
-	#define CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE     24000
+	#define CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE     2000
 	#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN        TUD_AUDIO_MIC_MANY_CH_DESC_LEN
 	#define TUD_AUDIO_MIC_SOME_CH_DESCRIPTOR     TUD_AUDIO_MIC_MANY_CH_DESCRIPTOR
 
 	#if (CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE * CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX / 1000 * 4 + 64 > 512)
-		#error "USB fifo too small. Decrease sample rate or channels number"
-	#endif
-
-	#if   CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 1
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 1ch"
-	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 2
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 2ch"
-	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 3
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 3ch"
-	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 4
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 4ch"
-	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 5
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 5ch"
-	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 6
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 6ch"
-	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 7
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 7ch"
-	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 8
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 8ch"
-	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 9
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 9ch"
-	#elif CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX == 10
-		#define TUD_PRODUCT_NAME                     "TinyUSB MIC 10ch"
+		#error "USB FIFO too small. Decrease sample rate or channels number"
 	#endif
 
 #endif // CFG_USE_FEATURE_UNIT
