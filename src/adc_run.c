@@ -20,8 +20,8 @@ int      g_AdcAccCnt;
 int16_t       g_AdcAvgBuff[2][CFG_TUD_AUDIO_EP_SZ_IN / 2];  // используем 2 буфера для накопления отсчётов АЦП: один заполняется, другой готов к передаче в USB
 unsigned int  g_AdcAvgBuffCnt[2] = {0, 0}; // заполненности буферов АЦП
 unsigned int  g_AdvAvgBuffIdx = 0;    // номер текущего буфера (0/1), в который накапливаются отсчёты АЦП
-volatile int  g_AdcAvgNum = 0;  // счётчик усреднений выборок АЦП.
-uint32_t      g_AdcCtrl = 3;
+volatile int  g_AdcAvgNum, g_AdcAdcSampleRate;  //
+uint32_t      g_AdcCtrl = 7;
 //volatile int g_AdcIntCnt = 0;  // debug
 
 
@@ -31,9 +31,9 @@ uint32_t      g_AdcCtrl = 3;
 // зависимость частоты дискредизации АЦП от кол-ва каналов
 // когда АЦП успевает всё оцифровать
 // это значение кратно меньше 192кГц
-#if CFG_ADC_ALTERNATION_EN
+#if CFG_ALERNATION_2_CH_8
 	// указано для Fadc=9MHz, ADC_SMPR=1
-	// и перемежением измерений при кол-ве каналов от 2 до 8,
+	// и чередованием измерений при кол-ве каналов от 2 до 8,
 	// без перемежения при кол-ве каналов 1, 9 и 10
 	const int AdcSampleRate[] =
 	{
@@ -50,7 +50,7 @@ uint32_t      g_AdcCtrl = 3;
 		ADC_RATE(32000),      // 10
 
 	};
-#else // CFG_ADC_ALTERNATION_EN
+#else // CFG_ALERNATION_2_CH_8
 	// указано для Fadc=9MHz, ADC_SMPR=2
 	// и без перемежения измерений
 	const int AdcSampleRate[] =
@@ -67,7 +67,7 @@ uint32_t      g_AdcCtrl = 3;
 		ADC_RATE(32000),      // 9
 		ADC_RATE(32000),      // 10
 	};
-#endif // CFG_ADC_ALTERNATION_EN
+#endif // CFG_ALERNATION_2_CH_8
 
 
 
@@ -85,8 +85,8 @@ void adc_init(void)
 	ADC1->CR2 = ADC_CR2_ADON | ADC_CR2_CAL;             // start calibration
 	while (!(ADC1->CR2 & ADC_CR2_CAL));   // wait calibration complete
 
-	#if  (ADC_CHN_NUM > 1) && (ADC_CHN_NUM <= 8) && (CFG_ADC_ALTERNATION_EN)
-		// перемежение измерений с каким-то стабильным каналом, для уменьшения влияния соседних каналов друг на друга
+	#if  CFG_ALERNATION_2_CH_8
+		// чередование измерений с каким-то стабильным каналом, для уменьшения влияния соседних каналов друг на друга
 		#define ADC_DMA_NUM  (ADC_CHN_NUM * 2)
 		#define ADC_SMPR 1
 		#define ADC_ZERO_CHN 17
@@ -113,15 +113,15 @@ void adc_init(void)
 	// init TIM3
 	// инициализируем TIM3 как триггер
 	// находим оптимальные значения периода и прескалера
-	uint32_t period = SystemCoreClock / 192000; //AdcSampleRate[ADC_CHN_NUM];
-	int shift = 0;
-	while(period > 0x00010000)
-	{
-		shift++;
-		period >>= 1;
-	}
+	uint32_t period = SystemCoreClock / AdcSampleRate[ADC_CHN_NUM];
+//	int shift = 0;
+//	while(period > 0x00010000)
+//	{
+//		shift++;
+//		period >>= 1;
+//	}
 
-	TIM3->PSC = (1 << shift) - 1;   // prescaler
+	//TIM3->PSC = (1 << shift) - 1;   // prescaler
 	TIM3->ARR = period - 1;         // period
 	TIM3->CR2 = TIM_CR2_MMS_1;      // set 'UPDATE' event as 'TRGO'
 	TIM3->CNT = 0;
@@ -145,12 +145,19 @@ void adc_init(void)
 	// запускаем преобразование
 	TIM3->CR1 = TIM_CR1_CEN;  // запускаем всё
 	g_AdcAvgNum = ADC_AVG_NUM; // визуализация для отладки
+	g_AdcAdcSampleRate = adc_get_actual_sample_rate(); // визуализация для отладки
 
+}
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+int adc_get_ADC_AVG_NUM(void)
+{
+	return ADC_AVG_NUM;
 }
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 int adc_get_actual_sample_rate(void)
 {
-	return AdcSampleRate[ADC_CHN_NUM] / ADC_AVG_NUM;
+	//return AdcSampleRate[ADC_CHN_NUM] / ADC_AVG_NUM;
+	return SystemCoreClock / (TIM3->ARR + 1) / (TIM3->PSC + 1);
 }
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 // устанавливаем, какой буфер (0 или 1) будет использоваться для накопления отсчётов
@@ -180,8 +187,13 @@ void DMA1_Channel1_IRQHandler(void)
 
 	for(int i = 0; i < ADC_CHN_NUM; i++)
 	{
-		if(g_AdcCtrl & 4) g_AdcAcc[i] += src[i];  // averaging
-		else              g_AdcAcc[i]  = src[i];  // single (last) sample
+		#if CFG_ALERNATION_2_CH_8
+			if(g_AdcCtrl & 4) g_AdcAcc[i] += src[i*2 + 1];  // averaging
+			else              g_AdcAcc[i]  = src[i*2 + 1];  // single (last) sample
+		#else // CFG_ALERNATION_2_CH_8
+			if(g_AdcCtrl & 4) g_AdcAcc[i] += src[i];  // averaging
+			else              g_AdcAcc[i]  = src[i];  // single (last) sample
+		#endif //CFG_ALERNATION_2_CH_8
 	}
 
 	g_AdcAccCnt++;
@@ -205,7 +217,7 @@ void DMA1_Channel1_IRQHandler(void)
 					vv = g_AdcAcc[i];
 					if(g_AdcCtrl & 4) vv /= ADC_AVG_NUM;  // averaging summ
 				}
-				else  vv = (ccc++ & 1) ? 0 : 4095;     // flip-flop imitation
+				else  vv = ((ccc >> i) & 1) ? 0 : 4095;     // flip-flop imitation
 
 				// Ctrl pin 2 - full 16-bit scale or 12-bit ADC scale
 				//if(g_AdcCtrl & 2) vv = ((vv << 4) | (vv >> 8)) ^ 0x8000;
@@ -216,6 +228,7 @@ void DMA1_Channel1_IRQHandler(void)
 				g_AdcAcc[i] = 0;
 			}
 			(*pBuffCnt)++;
+			ccc++;
 		}
 	}
 	//g_AdcIntCnt++;

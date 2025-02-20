@@ -10,6 +10,7 @@
 	void adc_init(void);
 	int  adc_get_actual_sample_rate(void);
 	void adc_set_buff_idx(unsigned int idx);
+	int  adc_get_ADC_AVG_NUM(void);
 
 	extern unsigned int  g_AdvAvgBuffIdx;
 	extern unsigned int  g_AdcAvgBuffCnt[2];

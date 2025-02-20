@@ -93,6 +93,8 @@ int main(void)
 {
 
     board_init();
+
+    adc_init();
     make_device_name();
 
     // init device stack on configured roothub port
@@ -117,7 +119,6 @@ int main(void)
     sampleFreqRng.subrange[0].bMax = CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE;
     sampleFreqRng.subrange[0].bRes = 0;
 
-    adc_init();
 
     while (1)
     {
@@ -128,11 +129,24 @@ int main(void)
 //------------------------------------------------------------------------------------------------------------------------------
 void make_device_name(void)
 {
-	strcpy(g_DeviceName, "TinyUSB MIC ");
+	#if CFG_ALERNATION_2_CH_8
+		strcpy(g_DeviceName, "TinyUSB MIC alt ");
+	#else // CFG_ALERNATION_2_CH_8
+		strcpy(g_DeviceName, "TinyUSB MIC ");
+	#endif // CFG_ALERNATION_2_CH_8
 	itoa(CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX, g_DeviceName + strlen(g_DeviceName), 10);
 	strcat(g_DeviceName, "ch/");
-	itoa(adc_get_actual_sample_rate() / 1000, g_DeviceName + strlen(g_DeviceName), 10);
-	strcat(g_DeviceName, "kHz");
+	int real_sample_rate = adc_get_actual_sample_rate() / adc_get_ADC_AVG_NUM();
+	if(real_sample_rate % 1000 == 0)
+	{
+		itoa(real_sample_rate / 1000, g_DeviceName + strlen(g_DeviceName), 10);
+		strcat(g_DeviceName, "kHz");
+	}
+	else
+	{
+		itoa(real_sample_rate, g_DeviceName + strlen(g_DeviceName), 10);
+		strcat(g_DeviceName, "Hz");
+	}
 	//
 }
 //------------------------------------------------------------------------------------------------------------------------------
@@ -653,7 +667,7 @@ bool tud_audio_set_itf_close_EP_cb(uint8_t rhport, tusb_control_request_t const 
 {
     (void) rhport;
 //    (void) p_request;
-    startVal = 0;
+//    startVal = 0;
 
 //	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 108;
 //	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = p_request->bRequest ;
