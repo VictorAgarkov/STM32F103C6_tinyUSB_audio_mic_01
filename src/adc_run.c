@@ -11,7 +11,7 @@
 #include "adc_run.h"
 #include "tusb_config.h"
 
-uint16_t g_AdcDmaBuff[16];
+uint16_t g_AdcDmaBuff[16 * 2];
 
 uint32_t g_AdcAcc[10];
 int      g_AdcAccCnt;
@@ -130,12 +130,12 @@ void adc_init(void)
 	DMA1_Channel1->CCR   = 0;
 	DMA1_Channel1->CMAR  = (unsigned long)g_AdcDmaBuff;
 	DMA1_Channel1->CPAR  = (unsigned long)&ADC1->DR;
-	DMA1_Channel1->CNDTR = ADC_DMA_NUM;
+	DMA1_Channel1->CNDTR = ADC_DMA_NUM * 2;
 	DMA1_Channel1->CCR   = DMA_CCR_EN | DMA_CCR_MINC | DMA_CCR_PSIZE_0 | DMA_CCR_MSIZE_0 | DMA_CCR_CIRC;
 
 	// подготавливаем к прерываниям
 	DMA1->IFCR = 0x000f000f;  // Reset interrupt flag for 1 & 5 channels.
-	DMA1_Channel1->CCR   |= DMA_CCR_TCIE;  // Enable CH1 interrupt
+	DMA1_Channel1->CCR   |= DMA_CCR_TCIE | DMA_CCR_HTIE;  // Enable CH1 interrupt
 
 	NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 	NVIC_SetPriority(DMA1_Channel1_IRQn, 1);
@@ -168,12 +168,20 @@ void adc_set_buff_idx(unsigned int idx)
 int ccc = 0;
 void DMA1_Channel1_IRQHandler(void)
 {
+	uint32_t isr = DMA1->ISR;    // current interrupt flags value
 	DMA1->IFCR = DMA_IFCR_CGIF1; // reset flag
+
+	int16_t *src = 0;
+
+	if     (isr & DMA_ISR_TCIF1) src = g_AdcDmaBuff + 0;
+	else if(isr & DMA_ISR_HTIF1) src = g_AdcDmaBuff + ADC_DMA_NUM;
+
+	if(!src) return;
 
 	for(int i = 0; i < ADC_CHN_NUM; i++)
 	{
-		if(g_AdcCtrl & 4) g_AdcAcc[i] += g_AdcDmaBuff[i];  // averaging
-		else              g_AdcAcc[i]  = g_AdcDmaBuff[i];  // single (last) sample
+		if(g_AdcCtrl & 4) g_AdcAcc[i] += src[i];  // averaging
+		else              g_AdcAcc[i]  = src[i];  // single (last) sample
 	}
 
 	g_AdcAccCnt++;
@@ -193,7 +201,8 @@ void DMA1_Channel1_IRQHandler(void)
 				// Ctrl pin 1 - ADC signal or imitation
 				if(g_AdcCtrl & 1)
 				{
-					vv = g_AdcAcc[i];  // real ADC signal
+					// real ADC signal
+					vv = g_AdcAcc[i];
 					if(g_AdcCtrl & 4) vv /= ADC_AVG_NUM;  // averaging summ
 				}
 				else  vv = (ccc++ & 1) ? 0 : 4095;     // flip-flop imitation

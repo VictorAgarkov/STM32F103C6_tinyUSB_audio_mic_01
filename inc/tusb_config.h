@@ -145,7 +145,7 @@ extern "C" {
 		#error "Unsupported channels number for enabled Feature Unit (CFG_USE_FEATURE_UNIT != 0)"
 	#endif
 #else // CFG_USE_FEATURE_UNIT
-	#define CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE     2000
+	#define CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE     48000
 	#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN        TUD_AUDIO_MIC_MANY_CH_DESC_LEN
 	#define TUD_AUDIO_MIC_SOME_CH_DESCRIPTOR     TUD_AUDIO_MIC_MANY_CH_DESCRIPTOR
 
