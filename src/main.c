@@ -72,9 +72,9 @@ audio_control_range_2_n_t(1) volumeRng[CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX+1]; 		
 audio_control_range_4_n_t(1) sampleFreqRng; 						// Sample frequency range state
 
 // Audio test data
-uint16_t test_buffer_audio[CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE / 1000 * CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX];
-int16_t startVal = 0;
-int     bytes_to_send = 0;
+//uint16_t test_buffer_audio[CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE / 1000 * CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX];
+//int16_t startVal = 0;
+//int     bytes_to_send = 0;
 char g_DeviceName[32];
 
 void audio_task(void);
@@ -576,19 +576,29 @@ bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, u
 {
 //	if(stat_cnt < NUMOFARRAY(stat)) stat[stat_cnt++] = 106;
 //	if(bytes_to_send < NUMOFARRAY(stat)) stat[bytes_to_send]++;
-    (void) rhport;
-    (void) itf;
-    (void) ep_in;
-    (void) cur_alt_setting;
+	(void) rhport;
+	(void) itf;
+	(void) ep_in;
+	(void) cur_alt_setting;
 
-    //tud_audio_write ((uint8_t *)test_buffer_audio, sizeof(test_buffer_audio));
-    tud_audio_write ((uint8_t *)test_buffer_audio, bytes_to_send);
-    bytes_to_send = 0;
+	//tud_audio_write ((uint8_t *)test_buffer_audio, sizeof(test_buffer_audio));
+	//tud_audio_write ((uint8_t *)test_buffer_audio, bytes_to_send);
+	//bytes_to_send = 0;
 
-    device_state |= 2;
-    update_led_mode();
+	int buff_idx = g_AdvAvgBuffIdx;
+	adc_set_buff_idx(!buff_idx);
+	int fill_cnt = g_AdcAvgBuffCnt[buff_idx];
 
-    return true;
+	tud_audio_write ((uint8_t *)g_AdcAvgBuff[buff_idx], fill_cnt * sizeof(g_AdcAvgBuff[0][0]) * ADC_CHN_NUM);
+
+	g_AdcAvgBuffCnt[buff_idx] = 0;
+
+
+
+	device_state |= 2;
+	update_led_mode();
+
+	return true;
 }
 //------------------------------------------------------------------------------------------------------------------------------
 //volatile uint32_t last_bytes_to_send = 0;
@@ -634,13 +644,6 @@ bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uin
 //		startVal++;
 //    }
 
-		int buff_idx = g_AdvAvgBuffIdx;
-		adc_set_buff_idx(!buff_idx);
-		int fill_cnt = g_AdcAvgBuffCnt[buff_idx];
-
-		bytes_to_send = fill_cnt * sizeof(g_AdcAvgBuff[0][0]) * ADC_CHN_NUM;
-		memcpy(test_buffer_audio, g_AdcAvgBuff[buff_idx], bytes_to_send);
-		g_AdcAvgBuffCnt[buff_idx] = 0;
 
     return true;
 }

@@ -208,6 +208,7 @@ void DMA1_Channel1_IRQHandler(void)
 				else  vv = (ccc++ & 1) ? 0 : 4095;     // flip-flop imitation
 
 				// Ctrl pin 2 - full 16-bit scale or 12-bit ADC scale
+				//if(g_AdcCtrl & 2) vv = ((vv << 4) | (vv >> 8)) ^ 0x8000;
 				if(g_AdcCtrl & 2) vv = (vv << 4) ^ 0x8000;
 
 				p16[i] = vv;
