@@ -89,7 +89,7 @@ void adc_init(void)
 		// чередование измерений с каким-то стабильным каналом, для уменьшения влияния соседних каналов друг на друга
 		#define ADC_DMA_NUM  (ADC_CHN_NUM * 2)
 		#define ADC_SMPR 1
-		#define ADC_ZERO_CHN 17
+		#define ADC_ZERO_CHN 15
 		ADC1->SQR3 = (ADC_ZERO_CHN << 0) | (0 << 5) | (ADC_ZERO_CHN << 10) | (1 << 15) | (ADC_ZERO_CHN << 20) | (2 << 25);
 		ADC1->SQR2 = (ADC_ZERO_CHN << 0) | (3 << 5) | (ADC_ZERO_CHN << 10) | (4 << 15) | (ADC_ZERO_CHN << 20) | (5 << 25);
 		ADC1->SQR1 = (ADC_ZERO_CHN << 0) | (6 << 5) | (ADC_ZERO_CHN << 10) | (7 << 15)                        | ((ADC_DMA_NUM - 1) << 20);
