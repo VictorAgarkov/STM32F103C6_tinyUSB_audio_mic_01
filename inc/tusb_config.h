@@ -114,7 +114,7 @@ extern "C" {
 // Have a look into audio_device.h for all configurations
 
 
-#define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX                            1                                      // Driver gets this info from the descriptors - we define it here to use it to setup the descriptors and to do calculations with it below - be aware: for different number of channels you need another descriptor!
+#define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX                            4                                      // Driver gets this info from the descriptors - we define it here to use it to setup the descriptors and to do calculations with it below - be aware: for different number of channels you need another descriptor!
 //#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN                                 TUD_AUDIO_MIC_ONE_CH_DESC_LEN
 #define CFG_TUD_AUDIO_FUNC_1_N_AS_INT                                 1                                       // Number of Standard AS Interface Descriptors (4.9.1) defined per audio function - this is required to be able to remember the current alternate settings of these interfaces - We restrict us here to have a constant number for all audio functions (which means this has to be the maximum number of AS interfaces an audio function has and a second audio function with less AS interfaces just wastes a few bytes)
 #define CFG_TUD_AUDIO_FUNC_1_CTRL_BUF_SZ                              64                                      // Size of control request buffer
@@ -125,7 +125,7 @@ extern "C" {
 #define CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX                             CFG_TUD_AUDIO_EP_SZ_IN
 #define CFG_TUD_AUDIO_FUNC_1_EP_IN_SW_BUF_SZ                          (TUD_OPT_HIGH_SPEED ? 8 : 1) * CFG_TUD_AUDIO_EP_SZ_IN // Example write FIFO every 1ms, so it should be 8 times larger for HS device
 #define CFG_USE_FEATURE_UNIT                                          0   // enable "Feature Unit" (volume/mute control)
-#define CFG_ADC_ALTERNATION_EN                                        1  // чередование входных каналов АЦП и канала температуры при оцифровке, для уменьшения влияния соседних каналов друг на друга (только при кол-ве каналов от 2 до 8)
+#define CFG_ADC_ALTERNATION_EN                                        0  // чередование входных каналов АЦП и канала температуры при оцифровке, для уменьшения влияния соседних каналов друг на друга (только при кол-ве каналов от 2 до 8)
 
 
 #if CFG_USE_FEATURE_UNIT
@@ -145,7 +145,7 @@ extern "C" {
 		#error "Unsupported channels number for enabled Feature Unit (CFG_USE_FEATURE_UNIT != 0)"
 	#endif
 #else // CFG_USE_FEATURE_UNIT
-	#define CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE     64000
+	#define CFG_TUD_AUDIO_FUNC_1_SAMPLE_RATE     24000
 	#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN        TUD_AUDIO_MIC_MANY_CH_DESC_LEN
 	#define TUD_AUDIO_MIC_SOME_CH_DESCRIPTOR     TUD_AUDIO_MIC_MANY_CH_DESCRIPTOR
 

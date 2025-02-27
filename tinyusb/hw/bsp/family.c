@@ -43,7 +43,8 @@ void user_systick_handler(uint32_t tick_count);
 struct s_PinDef g_PinsUsb[] =
 {
 	#ifdef USB_CONNECT_PIN
-		{GPIOA, 15,  GPIO_Speed_10MHz | GPIO_Mode_OUT_PP,  0},  // USB pullup
+		{GPIOA, 15,  GPIO_Speed_10MHz | GPIO_Mode_OUT_PP,  0},  // USB pullup - handmade PA15 on bluepill
+		//{GPIOD,  2,  GPIO_Speed_10MHz | GPIO_Mode_OUT_PP,  0},  // USB pullup - on "315M" board by www.armjishu.com
 	#endif
 //	{GPIOA, 11,  GPIO_Speed_50MHz | GPIO_Mode_AF_PP,  0},  // USB
 //	{GPIOA, 12,  GPIO_Speed_50MHz | GPIO_Mode_AF_PP,  0},  // USB
@@ -53,7 +54,8 @@ struct s_PinDef g_PinsUsb[] =
 
 struct s_PinDef g_PinsOut[] =
 {
-	{GPIOC, 13,  GPIO_Speed_10MHz | GPIO_Mode_OUT_PP,  1},  // LED
+	{GPIOC, 13,  GPIO_Speed_10MHz | GPIO_Mode_OUT_PP,  1},  // LED - bluepill
+	//{GPIOA, 2,  GPIO_Speed_10MHz | GPIO_Mode_OUT_PP,  1},  // LED1 - "315M" board
 };
 
 struct s_PinDef g_PinsCtrl[] =
